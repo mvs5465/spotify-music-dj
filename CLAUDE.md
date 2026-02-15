@@ -30,3 +30,9 @@ A localhost AI-powered Spotify DJ app that learns user music preferences through
 - Keep explanations brief and focused
 - Use bullet points for clarity
 - Lead with the answer
+
+### README Management
+- **Update README.md on every push** with latest task status
+- Keep "Project Status" section accurate (Backlog, In Progress, Complete)
+- Mark completed tasks with [x], in-progress with progress notes
+- This is the source of truth for project state

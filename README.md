@@ -12,10 +12,39 @@ A localhost app that integrates with Claude AI and Spotify to create an intellig
 
 ## Tech Stack
 
-- **Frontend**: (TBD)
-- **Backend**: (TBD)
+- **Frontend**: React
+- **Backend**: Node.js + Express
+- **Database**: SQLite (local preference tracking)
 - **AI**: Claude API
-- **Music Service**: Spotify Web API & Web Playback SDK
+- **Music Service**: Spotify Web API
+
+## Project Status
+
+### Backlog
+- [ ] Frontend setup (React)
+- [ ] Spotify Web Playback SDK integration
+- [ ] Preference UI (upvote/downvote/skip buttons)
+- [ ] Playback controls (when Premium)
+- [ ] Music recommendation refinements
+
+### In Progress
+- [ ] Backend setup (Node.js + Express)
+- [ ] Spotify API authentication & integration
+- [ ] Claude API integration for chat
+- [ ] Database schema for preference tracking
+
+### Complete
+- [x] Project initialization
+- [x] README & CLAUDE.md setup
+
+## Metrics Tracked
+
+All songs tracked with:
+- **Play Count**: How many times selected/played
+- **Skip Count**: Times user skipped
+- **Upvote/Downvote**: User preference signals
+- **Last Played**: Timestamp of last interaction
+- **Artist/Genre**: For pattern analysis
 
 ## Setup
 
