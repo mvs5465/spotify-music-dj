@@ -1,0 +1,30 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build output
+frontend/dist/
+backend/public/
+
+# Database
+backend/db/metrics.db
+backend/db/metrics.db-shm
+backend/db/metrics.db-wal
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+.vscode/
+.idea/
+
+# Vite
+.vite/
