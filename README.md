@@ -33,14 +33,14 @@ A localhost app that integrates with Claude AI and Spotify to create an intellig
 - [x] Preference learning system
 
 ### In Progress
+- [ ] Spotify Web Playback SDK integration (requires Premium)
 - [ ] Testing and refinement
-- [ ] Deployment setup
 
 ### Backlog
-- [ ] Spotify Web Playback SDK integration (Premium feature)
 - [ ] Playlist export
 - [ ] Advanced preference analysis
 - [ ] Mobile responsive improvements
+- [ ] Deployment setup
 
 ## Metrics Tracked
 
@@ -77,8 +77,15 @@ All songs tracked with:
 
 ## Usage
 
-1. Open http://localhost:5173 (dev) or http://localhost:8080 (prod)
-2. Click "Login with Spotify" and authorize
-3. Chat with the DJ: "recommend something upbeat" or "suggest a song like [artist]"
-4. Use Play, Skip, 👍, 👎 buttons to track preferences
-5. DJ learns your taste and improves recommendations over time
+1. Open http://127.0.0.1:5173 (use IP, not localhost)
+2. Click "Login with Spotify" and authorize with your account
+3. Chat with the DJ: "recommend something upbeat" or "suggest jazz"
+4. Click "Play" on any song to open in Spotify
+5. Use Skip, 👍, 👎 buttons to track preferences
+6. DJ learns your taste and improves recommendations over time
+
+## Current Limitations
+
+- **Playback Control**: Requires Spotify Premium for embedded playback. Free tier opens songs in Spotify web/app.
+- **IP Access**: Use `http://127.0.0.1:5173` (not `localhost`) due to Spotify auth requirements
+- **App Registration**: Must add your Spotify account to the app in developer dashboard for search to work

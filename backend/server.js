@@ -17,7 +17,7 @@ const app = express();
 app.use(express.json());
 
 // Initialize database
-initDatabase();
+await initDatabase();
 
 // Routes
 app.use('/api/metrics', metricsRoutes);
@@ -37,4 +37,7 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}).on('error', (err) => {
+  console.error('Server error:', err);
+  process.exit(1);
 });

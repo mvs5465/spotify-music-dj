@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function SongCard({ song, onPlay, onSkip, onUpvote, onDownvote }) {
+export default function SongCard({ song, onPlay, onSkip, onUpvote, onDownvote, onSelect }) {
   const handlePlay = async () => {
     // Upsert song metrics
     await fetch('/api/metrics/upsert', {
@@ -22,6 +22,7 @@ export default function SongCard({ song, onPlay, onSkip, onUpvote, onDownvote })
 
     // Open in Spotify
     window.open(song.external_urls.spotify, '_blank');
+    onSelect?.(song);
     onPlay?.();
   };
 

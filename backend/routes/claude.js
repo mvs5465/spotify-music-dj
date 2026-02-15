@@ -1,20 +1,17 @@
 import express from 'express';
 import fetch from 'node-fetch';
-import { getDatabase } from '../db/database.js';
+import { allQuery } from '../db/database.js';
 
 const router = express.Router();
 
 // Build preference context from database
-function buildPreferenceContext() {
-  const db = getDatabase();
-  const stmt = db.prepare(`
+async function buildPreferenceContext() {
+  const songs = await allQuery(`
     SELECT title, artist, play_count, skip_count, upvote_count, downvote_count
     FROM song_metrics
     ORDER BY play_count DESC, upvote_count DESC
     LIMIT 20
   `);
-
-  const songs = stmt.all();
 
   if (songs.length === 0) {
     return 'No song history yet.';
@@ -42,7 +39,7 @@ router.post('/chat', async (req, res) => {
   }
 
   try {
-    const preferenceContext = buildPreferenceContext();
+    const preferenceContext = await buildPreferenceContext();
     const enhancedMessage = `${message}\n\n[User Context: ${preferenceContext}]`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -55,6 +52,13 @@ router.post('/chat', async (req, res) => {
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
+        system: `You are a Music DJ assistant for a Spotify music app. Your role is to:
+1. Recommend songs and artists based on user requests and their listening history
+2. Help users discover new music matching their taste
+3. Provide song suggestions when asked
+4. Acknowledge user preferences and tailor recommendations accordingly
+
+Be conversational, enthusiastic about music, and provide specific song/artist recommendations. When users ask for recommendations, suggest real songs with artist names that can be searched on Spotify.`,
         messages: [
           {
             role: 'user',

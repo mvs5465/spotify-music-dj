@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SongCard from './SongCard';
+import Player from './Player';
 
 export default function Chat({ accessToken }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
+  const [currentSong, setCurrentSong] = useState(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -37,27 +39,27 @@ export default function Chat({ accessToken }) {
 
       setMessages(prev => [...prev, { role: 'assistant', content: chatData.reply }]);
 
-      // Try to extract song requests from Claude's response
-      // Look for patterns like "recommend", "suggest", "how about", etc.
-      const shouldSearchMusic =
-        userMessage.toLowerCase().includes('recommend') ||
-        userMessage.toLowerCase().includes('suggest') ||
-        userMessage.toLowerCase().includes('song') ||
-        userMessage.toLowerCase().includes('music') ||
-        userMessage.toLowerCase().includes('what');
+      // Extract song titles from Claude's response
+      // Look for patterns like **"Song Name"** by Artist or "Song Name" by Artist
+      const songPattern = /\*\*"([^"]+)"\*\*\s*(?:by|-)\s*([^\n,]+)|"([^"]+)"\s*(?:by|-)\s*([^\n,]+)/g;
+      const matches = [...chatData.reply.matchAll(songPattern)];
 
-      if (shouldSearchMusic) {
-        // Extract search query from user message
-        const query = userMessage
-          .replace(/recommend|suggest|how about|what|song|music/gi, '')
-          .trim();
+      if (matches.length > 0) {
+        // Extract unique song/artist pairs
+        const queries = [];
+        matches.forEach(match => {
+          const songName = match[1] || match[3];
+          const artist = match[2] || match[4];
+          if (songName) {
+            queries.push(`${songName} ${artist ? artist.trim() : ''}`.trim());
+          }
+        });
 
-        if (query && query.length > 2) {
+        // Search for the first few recommendations
+        if (queries.length > 0) {
+          const searchQuery = queries[0];
           const searchResponse = await fetch(
-            `/api/spotify/search?q=${encodeURIComponent(query)}&limit=5`,
-            {
-              headers: { 'Authorization': `Bearer ${accessToken}` }
-            }
+            `/api/spotify/search?q=${encodeURIComponent(searchQuery)}&limit=8`
           );
 
           if (searchResponse.ok) {
@@ -65,6 +67,8 @@ export default function Chat({ accessToken }) {
             if (searchData.tracks?.items?.length > 0) {
               setRecommendations(searchData.tracks.items);
             }
+          } else {
+            console.error('Search failed:', await searchResponse.json());
           }
         }
       }
@@ -78,39 +82,52 @@ export default function Chat({ accessToken }) {
 
   return (
     <div className="chat-container">
-      <div className="chat-messages">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`message message-${msg.role}`}>
-            {msg.content}
-          </div>
-        ))}
-        {loading && <div className="message message-assistant">Thinking...</div>}
-        <div ref={messagesEndRef} />
+      <div className="chat-section">
+        <div className="chat-messages">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`message message-${msg.role}`}>
+              {msg.content}
+            </div>
+          ))}
+          {loading && <div className="message message-assistant">Thinking...</div>}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="chat-input">
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
+            placeholder="Ask the DJ for recommendations..."
+            disabled={loading}
+          />
+          <button onClick={handleSendMessage} disabled={loading}>
+            Send
+          </button>
+        </div>
       </div>
 
-      {recommendations.length > 0 && (
-        <div className="recommendations">
-          <h3>Recommendations</h3>
-          <div className="song-list">
-            {recommendations.map(song => (
-              <SongCard key={song.id} song={song} />
-            ))}
+      <div className="player-section">
+        <Player accessToken={accessToken} currentSong={currentSong} />
+        {recommendations.length > 0 ? (
+          <div className="recommendations">
+            <h3>Up Next</h3>
+            <div className="song-list">
+              {recommendations.map(song => (
+                <SongCard
+                  key={song.id}
+                  song={song}
+                  onSelect={setCurrentSong}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-
-      <div className="chat-input">
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-          placeholder="Ask the DJ for recommendations..."
-          disabled={loading}
-        />
-        <button onClick={handleSendMessage} disabled={loading}>
-          Send
-        </button>
+        ) : (
+          <div className="empty-player">
+            <p>Ask the DJ for recommendations to get started!</p>
+          </div>
+        )}
       </div>
     </div>
   );

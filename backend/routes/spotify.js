@@ -3,7 +3,43 @@ import fetch from 'node-fetch';
 
 const router = express.Router();
 
-// Helper to validate token
+let appAccessToken = null;
+let tokenExpiresAt = 0;
+
+// Get app-level access token via Client Credentials
+async function getAppAccessToken() {
+  if (appAccessToken && Date.now() < tokenExpiresAt) {
+    return appAccessToken;
+  }
+
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error('Spotify credentials not configured');
+  }
+
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`
+    },
+    body: 'grant_type=client_credentials'
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get app access token');
+  }
+
+  const data = await response.json();
+  appAccessToken = data.access_token;
+  tokenExpiresAt = Date.now() + data.expires_in * 1000;
+
+  return appAccessToken;
+}
+
+// Helper to validate token (no longer needed, but keep for future)
 function validateToken(req, res) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -13,17 +49,15 @@ function validateToken(req, res) {
   return authHeader.slice(7);
 }
 
-// Search tracks
+// Search tracks (using app-level token)
 router.get('/search', async (req, res) => {
-  const token = validateToken(req, res);
-  if (!token) return;
-
   const { q, limit = 10 } = req.query;
   if (!q) {
     return res.status(400).json({ error: 'Missing query parameter' });
   }
 
   try {
+    const token = await getAppAccessToken();
     const response = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track&limit=${limit}`,
       {
@@ -31,10 +65,20 @@ router.get('/search', async (req, res) => {
       }
     );
 
-    if (!response.ok) throw new Error('Search failed');
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type');
+      let errorData;
+      if (contentType?.includes('application/json')) {
+        errorData = await response.json();
+      } else {
+        errorData = await response.text();
+      }
+      throw new Error(`Spotify API error: ${response.status} ${JSON.stringify(errorData)}`);
+    }
     const data = await response.json();
     res.json(data);
   } catch (error) {
+    console.error('Search error:', error);
     res.status(500).json({ error: error.message });
   }
 });

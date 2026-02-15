@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import SpotifyAuth from './components/SpotifyAuth';
 import Chat from './components/Chat';
 
+// Define callback before SDK loads
+window.onSpotifyWebPlaybackSDKReady = () => {
+  // SDK ready, will be handled in Player component
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
@@ -22,14 +27,14 @@ export default function App() {
   }, []);
 
   const refreshToken = async () => {
-    const refreshToken = localStorage.getItem('spotify_refresh_token');
-    if (!refreshToken) return;
+    const refreshTokenValue = localStorage.getItem('spotify_refresh_token');
+    if (!refreshTokenValue) return;
 
     try {
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: refreshToken })
+        body: JSON.stringify({ refresh_token: refreshTokenValue })
       });
 
       if (response.ok) {
@@ -44,6 +49,21 @@ export default function App() {
       setIsAuthenticated(false);
     }
   };
+
+  // Auto-refresh token when about to expire
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const expiresAt = parseInt(localStorage.getItem('spotify_token_expires') || '0');
+    const timeUntilExpiry = expiresAt - Date.now();
+    const refreshIn = Math.max(timeUntilExpiry - 60000, 1000); // Refresh 1 min before expiry
+
+    const timer = setTimeout(() => {
+      refreshToken();
+    }, refreshIn);
+
+    return () => clearTimeout(timer);
+  }, [accessToken]);
 
   const handleLogout = () => {
     localStorage.removeItem('spotify_access_token');
@@ -63,7 +83,9 @@ export default function App() {
             <h1>Spotify Music DJ</h1>
             <button onClick={handleLogout} className="logout-button">Logout</button>
           </header>
-          <Chat accessToken={accessToken} />
+          <div className="main-content">
+            <Chat accessToken={accessToken} />
+          </div>
         </div>
       )}
     </div>
